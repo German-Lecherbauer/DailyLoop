@@ -165,7 +165,7 @@ DailyLoop/
 
 Video demostrativo de la aplicación:
 
-**YouTube:** LINK_DEL_VIDEO
+**YouTube:** https://youtube.com/shorts/ig-p5Cps1kk?si=KvI-ldZf3nhfqFVw
 
 ## Autor
 
