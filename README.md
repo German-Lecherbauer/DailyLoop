@@ -92,32 +92,48 @@ Se implementaron 3 tests:
 
 Para ejecutar los tests:
 
-```bash
-
+~~~bash
 npm test
+~~~
 
 Resultado esperado:
+
+~~~text
 Test Suites: 2 passed, 2 total
 Tests:       3 passed, 3 total
+~~~
 
-### Instalación
+## Instalación
 
 Clonar el repositorio:
-git clone URL_DEL_REPOSITORIO
+
+~~~bash
+git clone https://github.com/German-Lecherbauer/DailyLoop.git
+~~~
 
 Ingresar al proyecto:
+
+~~~bash
 cd DailyLoop
+~~~
 
 Instalar dependencias:
+
+~~~bash
 npm install
+~~~
 
 Ejecutar la aplicación:
+
+~~~bash
 npx expo start
+~~~
 
 Luego abrir la aplicación utilizando Expo Go.
 
-### Estructura del proyecto
+## Estructura del proyecto
 
+~~~text
 DailyLoop/
 │
 ├── __tests__/
@@ -143,11 +159,16 @@ DailyLoop/
 ├── App.js
 ├── package.json
 └── README.md
+~~~
 
-### Video Demo
+## Video Demo
+
 Video demostrativo de la aplicación:
-YouTube: LINK_DEL_VIDEO
-Autor
+
+**YouTube:** LINK_DEL_VIDEO
+
+## Autor
+
 Germán Lecherbauer
+
 Aplicaciones Móviles - 2026
-```
