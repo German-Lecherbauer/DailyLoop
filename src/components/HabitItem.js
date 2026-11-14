@@ -4,6 +4,7 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
+  Image,
 } from 'react-native';
 
 export default function HabitItem({
@@ -18,6 +19,13 @@ export default function HabitItem({
         habit.completed && styles.completedCard,
       ]}
     >
+      {habit.imageUri && (
+        <Image
+          source={{ uri: habit.imageUri }}
+          style={styles.habitImage}
+        />
+      )}
+
       <View style={styles.topRow}>
         <View
           style={[
@@ -28,7 +36,8 @@ export default function HabitItem({
           <Text
             style={[
               styles.icon,
-              habit.completed && styles.completedIconText,
+              habit.completed &&
+                styles.completedIconText,
             ]}
           >
             {habit.completed ? '✓' : '◎'}
@@ -39,7 +48,8 @@ export default function HabitItem({
           <Text
             style={[
               styles.name,
-              habit.completed && styles.completedName,
+              habit.completed &&
+                styles.completedName,
             ]}
           >
             {habit.name}
@@ -63,7 +73,8 @@ export default function HabitItem({
         <TouchableOpacity
           style={[
             styles.completeButton,
-            habit.completed && styles.undoButton,
+            habit.completed &&
+              styles.undoButton,
           ]}
           onPress={() => onToggle(habit.id)}
           activeOpacity={0.8}
@@ -71,7 +82,8 @@ export default function HabitItem({
           <Text
             style={[
               styles.completeButtonText,
-              habit.completed && styles.undoButtonText,
+              habit.completed &&
+                styles.undoButtonText,
             ]}
           >
             {habit.completed
@@ -118,6 +130,14 @@ const styles = StyleSheet.create({
   completedCard: {
     backgroundColor: '#F0FDF4',
     borderColor: '#BBF7D0',
+  },
+
+  habitImage: {
+    width: '100%',
+    height: 180,
+    borderRadius: 15,
+    marginBottom: 16,
+    backgroundColor: '#F4F4F5',
   },
 
   topRow: {

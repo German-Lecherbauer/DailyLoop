@@ -6,28 +6,30 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  Image,
+  ScrollView,
 } from 'react-native';
 
 import * as Notifications from 'expo-notifications';
+import * as ImagePicker from 'expo-image-picker';
 
 import { useHabitStore } from '../stores/habitStore';
 
 export default function AddHabitScreen({ navigation }) {
   const [name, setName] = useState('');
-  const [frequency, setFrequency] =
-    useState('Diario');
+  const [frequency, setFrequency] = useState('Diario');
+  const [imageUri, setImageUri] = useState(null);
 
   const addHabit = useHabitStore(
     (state) => state.addHabit
   );
 
-  const requestNotificationPermission =
-    async () => {
-      const { status } =
-        await Notifications.requestPermissionsAsync();
+  const requestNotificationPermission = async () => {
+    const { status } =
+      await Notifications.requestPermissionsAsync();
 
-      return status === 'granted';
-    };
+    return status === 'granted';
+  };
 
   const scheduleHabitNotification = async (
     habitName
@@ -48,6 +50,122 @@ export default function AddHabitScreen({ navigation }) {
     });
   };
 
+  const ensureCameraPermission = async () => {
+    const currentPermission =
+      await ImagePicker.getCameraPermissionsAsync();
+
+    if (currentPermission.granted) {
+      return true;
+    }
+
+    if (
+      currentPermission.status === 'undetermined' ||
+      currentPermission.canAskAgain
+    ) {
+      const requestedPermission =
+        await ImagePicker.requestCameraPermissionsAsync();
+
+      if (requestedPermission.granted) {
+        return true;
+      }
+    }
+
+    Alert.alert(
+      'Permiso de cámara',
+      'Necesitamos acceso a la cámara para sacar una foto del hábito.'
+    );
+
+    return false;
+  };
+
+  const ensureGalleryPermission = async () => {
+    const currentPermission =
+      await ImagePicker.getMediaLibraryPermissionsAsync();
+
+    if (currentPermission.granted) {
+      return true;
+    }
+
+    if (
+      currentPermission.status === 'undetermined' ||
+      currentPermission.canAskAgain
+    ) {
+      const requestedPermission =
+        await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (requestedPermission.granted) {
+        return true;
+      }
+    }
+
+    Alert.alert(
+      'Permiso de galería',
+      'Necesitamos acceso a tus fotos para seleccionar una imagen.'
+    );
+
+    return false;
+  };
+
+  const takePhoto = async () => {
+    try {
+      const hasPermission =
+        await ensureCameraPermission();
+
+      if (!hasPermission) {
+        return;
+      }
+
+      const result =
+        await ImagePicker.launchCameraAsync({
+          mediaTypes: ['images'],
+          allowsEditing: true,
+          aspect: [4, 3],
+          quality: 0.8,
+        });
+
+      if (!result.canceled) {
+        setImageUri(result.assets[0].uri);
+      }
+    } catch (error) {
+      Alert.alert(
+        'Error',
+        'No se pudo abrir la cámara'
+      );
+    }
+  };
+
+  const pickImage = async () => {
+    try {
+      const hasPermission =
+        await ensureGalleryPermission();
+
+      if (!hasPermission) {
+        return;
+      }
+
+      const result =
+        await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ['images'],
+          allowsEditing: true,
+          aspect: [4, 3],
+          quality: 0.8,
+        });
+
+      if (!result.canceled) {
+        setImageUri(result.assets[0].uri);
+      }
+    } catch (error) {
+      Alert.alert(
+        'Error',
+        'No se pudo abrir la galería'
+      );
+    }
+  };
+
+  const removeImage = () => {
+    setImageUri(null);
+  };
+
   const saveHabit = async () => {
     if (name.trim() === '') {
       Alert.alert(
@@ -65,12 +183,10 @@ export default function AddHabitScreen({ navigation }) {
       completed: false,
       streak: 0,
 
-      imageUri: null,
+      imageUri,
 
       location: null,
-
       contact: null,
-
       calendarEventId: null,
     };
 
@@ -101,7 +217,11 @@ export default function AddHabitScreen({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.header}>
         <View style={styles.iconContainer}>
           <Text style={styles.icon}>＋</Text>
@@ -199,6 +319,63 @@ export default function AddHabitScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
+        <Text style={styles.label}>
+          Evidencia del hábito
+        </Text>
+
+        <Text style={styles.imageDescription}>
+          Podés sacar una foto o elegir una imagen
+          desde tu galería.
+        </Text>
+
+        <View style={styles.imageActions}>
+          <TouchableOpacity
+            style={styles.resourceButton}
+            onPress={takePhoto}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.resourceIcon}>
+              📷
+            </Text>
+
+            <Text style={styles.resourceButtonText}>
+              Cámara
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.resourceButton}
+            onPress={pickImage}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.resourceIcon}>
+              🖼️
+            </Text>
+
+            <Text style={styles.resourceButtonText}>
+              Galería
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {imageUri && (
+          <View style={styles.previewContainer}>
+            <Image
+              source={{ uri: imageUri }}
+              style={styles.previewImage}
+            />
+
+            <TouchableOpacity
+              style={styles.removeImageButton}
+              onPress={removeImage}
+            >
+              <Text style={styles.removeImageText}>
+                Quitar imagen
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         <View style={styles.notificationBox}>
           <View style={styles.notificationIcon}>
             <Text>🔔</Text>
@@ -232,10 +409,9 @@ export default function AddHabitScreen({ navigation }) {
       </View>
 
       <Text style={styles.tip}>
-        💡 La constancia vale más que la
-        perfección.
+        💡 La constancia vale más que la perfección.
       </Text>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -243,7 +419,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F7FAF8',
+  },
+
+  content: {
     padding: 22,
+    paddingBottom: 40,
   },
 
   header: {
@@ -356,6 +536,62 @@ const styles = StyleSheet.create({
 
   frequencyDescriptionSelected: {
     color: '#DCFCE7',
+  },
+
+  imageDescription: {
+    color: '#71717A',
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: 13,
+  },
+
+  imageActions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 20,
+  },
+
+  resourceButton: {
+    flex: 1,
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+
+  resourceIcon: {
+    fontSize: 22,
+    marginBottom: 5,
+  },
+
+  resourceButtonText: {
+    color: '#166534',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+
+  previewContainer: {
+    marginBottom: 24,
+  },
+
+  previewImage: {
+    width: '100%',
+    height: 190,
+    borderRadius: 16,
+    backgroundColor: '#F4F4F5',
+  },
+
+  removeImageButton: {
+    alignSelf: 'center',
+    marginTop: 10,
+  },
+
+  removeImageText: {
+    color: '#DC2626',
+    fontSize: 12,
+    fontWeight: '700',
   },
 
   notificationBox: {
