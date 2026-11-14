@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,66 +8,31 @@ import {
   Alert,
 } from 'react-native';
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import HabitItem from '../components/HabitItem';
-import { toggleHabitStatus } from '../utils/habitUtils';
+import { useHabitStore } from '../stores/habitStore';
 
 export default function HomeScreen({ navigation }) {
-  const [habits, setHabits] = useState([]);
-
-  useFocusEffect(
-    useCallback(() => {
-      loadHabits();
-    }, [])
+  const habits = useHabitStore(
+    (state) => state.habits
   );
 
-  const loadHabits = async () => {
-    try {
-      const storedHabits = await AsyncStorage.getItem('habits');
+  const loadHabits = useHabitStore(
+    (state) => state.loadHabits
+  );
 
-      if (storedHabits !== null) {
-        setHabits(JSON.parse(storedHabits));
-      } else {
-        setHabits([]);
-      }
-    } catch (error) {
-      Alert.alert(
-        'Error',
-        'No se pudieron cargar los hábitos'
-      );
-    }
-  };
+  const toggleHabit = useHabitStore(
+    (state) => state.toggleHabit
+  );
 
-  const saveHabits = async (updatedHabits) => {
-    try {
-      await AsyncStorage.setItem(
-        'habits',
-        JSON.stringify(updatedHabits)
-      );
+  const deleteHabitFromStore = useHabitStore(
+    (state) => state.deleteHabit
+  );
 
-      setHabits(updatedHabits);
-    } catch (error) {
-      Alert.alert(
-        'Error',
-        'No se pudieron guardar los hábitos'
-      );
-    }
-  };
-
-  const toggleHabit = (id) => {
-    const updatedHabits = habits.map((habit) => {
-      if (habit.id === id) {
-        return toggleHabitStatus(habit);
-      }
-
-      return habit;
-    });
-
-    saveHabits(updatedHabits);
-  };
+  useEffect(() => {
+    loadHabits();
+  }, [loadHabits]);
 
   const deleteHabit = (id) => {
     Alert.alert(
@@ -81,12 +46,15 @@ export default function HomeScreen({ navigation }) {
         {
           text: 'Eliminar',
           style: 'destructive',
-          onPress: () => {
-            const updatedHabits = habits.filter(
-              (habit) => habit.id !== id
-            );
-
-            saveHabits(updatedHabits);
+          onPress: async () => {
+            try {
+              await deleteHabitFromStore(id);
+            } catch (error) {
+              Alert.alert(
+                'Error',
+                'No se pudo eliminar el hábito'
+              );
+            }
           },
         },
       ]
@@ -104,7 +72,8 @@ export default function HomeScreen({ navigation }) {
         },
         {
           text: 'Cerrar sesión',
-          onPress: () => navigation.replace('Login'),
+          onPress: () =>
+            navigation.replace('Login'),
         },
       ]
     );
@@ -230,7 +199,9 @@ export default function HomeScreen({ navigation }) {
 
             <TouchableOpacity
               style={styles.emptyNewHabitButton}
-              onPress={() => navigation.navigate('AddHabit')}
+              onPress={() =>
+                navigation.navigate('AddHabit')
+              }
               activeOpacity={0.85}
             >
               <Text style={styles.plus}>+</Text>
@@ -246,7 +217,9 @@ export default function HomeScreen({ navigation }) {
       {habits.length > 0 && (
         <TouchableOpacity
           style={styles.newHabitButton}
-          onPress={() => navigation.navigate('AddHabit')}
+          onPress={() =>
+            navigation.navigate('AddHabit')
+          }
           activeOpacity={0.85}
         >
           <Text style={styles.plus}>+</Text>

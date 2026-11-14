@@ -8,21 +8,30 @@ import {
   Alert,
 } from 'react-native';
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
+
+import { useHabitStore } from '../stores/habitStore';
 
 export default function AddHabitScreen({ navigation }) {
   const [name, setName] = useState('');
-  const [frequency, setFrequency] = useState('Diario');
+  const [frequency, setFrequency] =
+    useState('Diario');
 
-  const requestNotificationPermission = async () => {
-    const { status } =
-      await Notifications.requestPermissionsAsync();
+  const addHabit = useHabitStore(
+    (state) => state.addHabit
+  );
 
-    return status === 'granted';
-  };
+  const requestNotificationPermission =
+    async () => {
+      const { status } =
+        await Notifications.requestPermissionsAsync();
 
-  const scheduleHabitNotification = async (habitName) => {
+      return status === 'granted';
+    };
+
+  const scheduleHabitNotification = async (
+    habitName
+  ) => {
     await Notifications.scheduleNotificationAsync({
       content: {
         title: 'DailyLoop 🔥',
@@ -31,7 +40,8 @@ export default function AddHabitScreen({ navigation }) {
 
       trigger: {
         type:
-          Notifications.SchedulableTriggerInputTypes
+          Notifications
+            .SchedulableTriggerInputTypes
             .TIME_INTERVAL,
         seconds: 10,
       },
@@ -51,27 +61,21 @@ export default function AddHabitScreen({ navigation }) {
     const newHabit = {
       id: Date.now().toString(),
       name: name.trim(),
-      frequency: frequency,
+      frequency,
       completed: false,
       streak: 0,
+
+      imageUri: null,
+
+      location: null,
+
+      contact: null,
+
+      calendarEventId: null,
     };
 
     try {
-      const storedHabits =
-        await AsyncStorage.getItem('habits');
-
-      let habits = [];
-
-      if (storedHabits !== null) {
-        habits = JSON.parse(storedHabits);
-      }
-
-      habits.push(newHabit);
-
-      await AsyncStorage.setItem(
-        'habits',
-        JSON.stringify(habits)
-      );
+      await addHabit(newHabit);
 
       const hasPermission =
         await requestNotificationPermission();
@@ -136,7 +140,9 @@ export default function AddHabitScreen({ navigation }) {
               frequency === 'Diario' &&
                 styles.frequencyButtonSelected,
             ]}
-            onPress={() => setFrequency('Diario')}
+            onPress={() =>
+              setFrequency('Diario')
+            }
             activeOpacity={0.8}
           >
             <Text
@@ -166,7 +172,9 @@ export default function AddHabitScreen({ navigation }) {
               frequency === 'Semanal' &&
                 styles.frequencyButtonSelected,
             ]}
-            onPress={() => setFrequency('Semanal')}
+            onPress={() =>
+              setFrequency('Semanal')
+            }
             activeOpacity={0.8}
           >
             <Text
@@ -197,12 +205,17 @@ export default function AddHabitScreen({ navigation }) {
           </View>
 
           <View style={styles.notificationInfo}>
-            <Text style={styles.notificationTitle}>
+            <Text
+              style={styles.notificationTitle}
+            >
               Recordatorio activado
             </Text>
 
-            <Text style={styles.notificationText}>
-              Recibirás una notificación de prueba 10 segundos después.
+            <Text
+              style={styles.notificationText}
+            >
+              Recibirás una notificación de prueba
+              10 segundos después.
             </Text>
           </View>
         </View>
@@ -219,7 +232,8 @@ export default function AddHabitScreen({ navigation }) {
       </View>
 
       <Text style={styles.tip}>
-        💡 La constancia vale más que la perfección.
+        💡 La constancia vale más que la
+        perfección.
       </Text>
     </View>
   );
