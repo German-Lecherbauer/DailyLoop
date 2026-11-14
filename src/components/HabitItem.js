@@ -30,7 +30,8 @@ export default function HabitItem({
         <View
           style={[
             styles.iconContainer,
-            habit.completed && styles.completedIcon,
+            habit.completed &&
+              styles.completedIcon,
           ]}
         >
           <Text
@@ -68,6 +69,25 @@ export default function HabitItem({
           </View>
         </View>
       </View>
+
+      {habit.location && (
+        <View style={styles.locationContainer}>
+          <View style={styles.locationIcon}>
+            <Text>📍</Text>
+          </View>
+
+          <View style={styles.locationInfo}>
+            <Text style={styles.locationTitle}>
+              Ubicación asociada
+            </Text>
+
+            <Text style={styles.locationText}>
+              {habit.location.latitude.toFixed(5)},{' '}
+              {habit.location.longitude.toFixed(5)}
+            </Text>
+          </View>
+        </View>
+      )}
 
       <View style={styles.actions}>
         <TouchableOpacity
@@ -207,6 +227,43 @@ const styles = StyleSheet.create({
     color: '#71717A',
     fontSize: 13,
     fontWeight: '600',
+  },
+
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    borderRadius: 14,
+    padding: 12,
+    marginTop: 16,
+  },
+
+  locationIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 11,
+    backgroundColor: '#DCFCE7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+
+  locationInfo: {
+    flex: 1,
+  },
+
+  locationTitle: {
+    color: '#166534',
+    fontSize: 12,
+    fontWeight: '800',
+    marginBottom: 2,
+  },
+
+  locationText: {
+    color: '#64748B',
+    fontSize: 11,
   },
 
   actions: {

@@ -12,6 +12,7 @@ import {
 
 import * as Notifications from 'expo-notifications';
 import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 
 import { useHabitStore } from '../stores/habitStore';
 
@@ -19,6 +20,9 @@ export default function AddHabitScreen({ navigation }) {
   const [name, setName] = useState('');
   const [frequency, setFrequency] = useState('Diario');
   const [imageUri, setImageUri] = useState(null);
+  const [location, setLocation] = useState(null);
+  const [loadingLocation, setLoadingLocation] =
+    useState(false);
 
   const addHabit = useHabitStore(
     (state) => state.addHabit
@@ -166,6 +170,59 @@ export default function AddHabitScreen({ navigation }) {
     setImageUri(null);
   };
 
+  const getCurrentLocation = async () => {
+    try {
+      setLoadingLocation(true);
+
+      const currentPermission =
+        await Location.getForegroundPermissionsAsync();
+
+      let permission = currentPermission;
+
+      if (!currentPermission.granted) {
+        permission =
+          await Location.requestForegroundPermissionsAsync();
+      }
+
+      if (!permission.granted) {
+        Alert.alert(
+          'Permiso de ubicación',
+          'Necesitamos acceso a tu ubicación para asociarla al hábito.'
+        );
+
+        return;
+      }
+
+      const currentLocation =
+        await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+
+      setLocation({
+        latitude:
+          currentLocation.coords.latitude,
+        longitude:
+          currentLocation.coords.longitude,
+      });
+
+      Alert.alert(
+        'Ubicación guardada',
+        'La ubicación actual se asociará al hábito.'
+      );
+    } catch (error) {
+      Alert.alert(
+        'Error',
+        'No se pudo obtener la ubicación actual'
+      );
+    } finally {
+      setLoadingLocation(false);
+    }
+  };
+
+  const removeLocation = () => {
+    setLocation(null);
+  };
+
   const saveHabit = async () => {
     if (name.trim() === '') {
       Alert.alert(
@@ -184,8 +241,8 @@ export default function AddHabitScreen({ navigation }) {
       streak: 0,
 
       imageUri,
+      location,
 
-      location: null,
       contact: null,
       calendarEventId: null,
     };
@@ -376,6 +433,56 @@ export default function AddHabitScreen({ navigation }) {
           </View>
         )}
 
+        <Text style={styles.label}>
+          Ubicación del hábito
+        </Text>
+
+        <Text style={styles.imageDescription}>
+          Podés asociar tu ubicación actual al hábito.
+        </Text>
+
+        <TouchableOpacity
+          style={styles.locationButton}
+          onPress={getCurrentLocation}
+          activeOpacity={0.8}
+          disabled={loadingLocation}
+        >
+          <Text style={styles.locationButtonIcon}>
+            📍
+          </Text>
+
+          <Text style={styles.locationButtonText}>
+            {loadingLocation
+              ? 'Obteniendo ubicación...'
+              : 'Usar ubicación actual'}
+          </Text>
+        </TouchableOpacity>
+
+        {location && (
+          <View style={styles.locationPreview}>
+            <Text style={styles.locationPreviewTitle}>
+              Ubicación asociada
+            </Text>
+
+            <Text style={styles.locationPreviewText}>
+              Lat: {location.latitude.toFixed(5)}
+            </Text>
+
+            <Text style={styles.locationPreviewText}>
+              Long: {location.longitude.toFixed(5)}
+            </Text>
+
+            <TouchableOpacity
+              onPress={removeLocation}
+              style={styles.removeLocationButton}
+            >
+              <Text style={styles.removeLocationText}>
+                Quitar ubicación
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         <View style={styles.notificationBox}>
           <View style={styles.notificationIcon}>
             <Text>🔔</Text>
@@ -463,7 +570,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     padding: 20,
-
     borderWidth: 1,
     borderColor: '#ECECF0',
 
@@ -589,6 +695,61 @@ const styles = StyleSheet.create({
   },
 
   removeImageText: {
+    color: '#DC2626',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+
+  locationButton: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    borderRadius: 14,
+    paddingVertical: 14,
+    marginBottom: 16,
+  },
+
+  locationButtonIcon: {
+    fontSize: 19,
+    marginRight: 8,
+  },
+
+  locationButtonText: {
+    color: '#166534',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+
+  locationPreview: {
+    backgroundColor: '#FAFAFA',
+    borderWidth: 1,
+    borderColor: '#E4E4E7',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 24,
+  },
+
+  locationPreviewTitle: {
+    color: '#166534',
+    fontSize: 13,
+    fontWeight: '800',
+    marginBottom: 5,
+  },
+
+  locationPreviewText: {
+    color: '#71717A',
+    fontSize: 12,
+    marginBottom: 2,
+  },
+
+  removeLocationButton: {
+    marginTop: 8,
+  },
+
+  removeLocationText: {
     color: '#DC2626',
     fontSize: 12,
     fontWeight: '700',
