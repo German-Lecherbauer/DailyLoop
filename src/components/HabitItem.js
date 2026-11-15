@@ -126,10 +126,18 @@ export default function HabitItem({
             </Text>
 
             <Text style={styles.resourceInfoText}>
-              {new Date(
-                habit.calendarEventDate
-              ).toLocaleString()}
-            </Text>
+  {(() => {
+    const date = new Date(habit.calendarEventDate);
+
+    return `${String(date.getDate()).padStart(2, '0')}/${String(
+      date.getMonth() + 1
+    ).padStart(2, '0')} · ${String(
+      date.getHours()
+    ).padStart(2, '0')}.${String(
+      date.getMinutes()
+    ).padStart(2, '0')}`;
+  })()}
+</Text>
           </View>
         </View>
       )}

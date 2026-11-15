@@ -683,118 +683,109 @@ setCalendarEventDate(
             </View>
           )}
 
-          {/* UBICACIÓN */}
+          {/* RECURSOS */}
 
-          <Text style={styles.label}>
-            Ubicación del hábito
-          </Text>
+<Text style={styles.label}>
+  Recursos del hábito
+</Text>
 
-          <Text style={styles.description}>
-            Podés asociar tu ubicación actual al hábito.
-          </Text>
+<Text style={styles.description}>
+  Asociá ubicación o un compañero al hábito.
+</Text>
 
-          <TouchableOpacity
-            style={styles.fullResourceButton}
-            onPress={getCurrentLocation}
-            disabled={loadingLocation}
-          >
-            <Text style={styles.fullResourceIcon}>
-              📍
-            </Text>
+<View style={styles.resourceRow}>
+  <TouchableOpacity
+    style={styles.compactResourceButton}
+    onPress={getCurrentLocation}
+    disabled={loadingLocation}
+  >
+    <Text style={styles.compactResourceIcon}>
+      📍
+    </Text>
 
-            <Text style={styles.fullResourceText}>
-              {loadingLocation
-                ? 'Obteniendo ubicación...'
-                : 'Usar ubicación actual'}
-            </Text>
-          </TouchableOpacity>
+    <Text style={styles.compactResourceText}>
+      {loadingLocation
+        ? 'Buscando...'
+        : location
+        ? 'Ubicación ✓'
+        : 'Ubicación'}
+    </Text>
+  </TouchableOpacity>
 
-          {location && (
-            <View style={styles.dataPreview}>
-              <Text style={styles.dataPreviewTitle}>
-                Ubicación asociada
-              </Text>
+  <TouchableOpacity
+    style={styles.compactResourceButton}
+    onPress={openContacts}
+    disabled={loadingContacts}
+  >
+    {loadingContacts ? (
+      <ActivityIndicator
+        size="small"
+        color="#166534"
+      />
+    ) : (
+      <>
+        <Text style={styles.compactResourceIcon}>
+          👤
+        </Text>
 
-              <Text style={styles.dataPreviewText}>
-                Lat: {location.latitude.toFixed(5)}
-              </Text>
+        <Text style={styles.compactResourceText}>
+          {selectedContact
+            ? 'Contacto ✓'
+            : 'Contacto'}
+        </Text>
+      </>
+    )}
+  </TouchableOpacity>
+</View>
 
-              <Text style={styles.dataPreviewText}>
-                Long: {location.longitude.toFixed(5)}
-              </Text>
+{location && (
+  <View style={styles.compactPreview}>
+    <View style={styles.compactPreviewContent}>
+      <Text style={styles.dataPreviewTitle}>
+        📍 Ubicación asociada
+      </Text>
 
-              <TouchableOpacity
-                onPress={removeLocation}
-                style={styles.removeButton}
-              >
-                <Text style={styles.removeText}>
-                  Quitar ubicación
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
+      <Text style={styles.dataPreviewText}>
+        {location.latitude.toFixed(5)},{' '}
+        {location.longitude.toFixed(5)}
+      </Text>
+    </View>
 
-          {/* CONTACTO */}
+    <TouchableOpacity onPress={removeLocation}>
+      <Text style={styles.removeText}>
+        Quitar
+      </Text>
+    </TouchableOpacity>
+  </View>
+)}
 
-          <Text style={styles.label}>
-            Compañero o entrenador
-          </Text>
+{selectedContact && (
+  <View style={styles.compactPreview}>
+    <View style={styles.compactPreviewContent}>
+      <Text style={styles.dataPreviewTitle}>
+        👤 Contacto asociado
+      </Text>
 
-          <Text style={styles.description}>
-            Asociá un contacto de tu agenda al hábito.
-          </Text>
+      <Text style={styles.contactName}>
+        {selectedContact.name}
+      </Text>
 
-          <TouchableOpacity
-            style={styles.fullResourceButton}
-            onPress={openContacts}
-            disabled={loadingContacts}
-          >
-            {loadingContacts ? (
-              <ActivityIndicator
-                size="small"
-                color="#166534"
-              />
-            ) : (
-              <>
-                <Text style={styles.fullResourceIcon}>
-                  👤
-                </Text>
+      <Text style={styles.dataPreviewText}>
+        {selectedContact.phone
+          ? selectedContact.phone
+          : 'Sin número de teléfono'}
+      </Text>
+    </View>
 
-                <Text style={styles.fullResourceText}>
-                  Seleccionar contacto
-                </Text>
-              </>
-            )}
-          </TouchableOpacity>
+    <TouchableOpacity onPress={removeContact}>
+      <Text style={styles.removeText}>
+        Quitar
+      </Text>
+    </TouchableOpacity>
+  </View>
+)}
 
-          {selectedContact && (
-            <View style={styles.dataPreview}>
-              <Text style={styles.dataPreviewTitle}>
-                Contacto asociado
-              </Text>
-
-              <Text style={styles.contactName}>
-                {selectedContact.name}
-              </Text>
-
-              <Text style={styles.dataPreviewText}>
-                {selectedContact.phone
-                  ? selectedContact.phone
-                  : 'Sin número de teléfono'}
-              </Text>
-
-              <TouchableOpacity
-                onPress={removeContact}
-                style={styles.removeButton}
-              >
-                <Text style={styles.removeText}>
-                  Quitar contacto
-                </Text>
-              </TouchableOpacity>
-            </View>
-          )}
-
-            {/* CALENDARIO */}
+{/* CALENDARIO */}
 
 <Text style={styles.label}>
   Recordatorio en calendario
@@ -804,30 +795,45 @@ setCalendarEventDate(
   Elegí cuándo querés recibir el recordatorio.
 </Text>
 
-<TouchableOpacity
-  style={styles.fullResourceButton}
-  onPress={() => setShowDatePicker(true)}
->
-  <Text style={styles.fullResourceIcon}>📆</Text>
+<View style={styles.calendarRow}>
+  <TouchableOpacity
+    style={styles.calendarButton}
+    onPress={() => setShowDatePicker(true)}
+  >
+    <Text style={styles.calendarIcon}>📆</Text>
 
-  <Text style={styles.fullResourceText}>
-    Fecha: {reminderDate.toLocaleDateString()}
-  </Text>
-</TouchableOpacity>
+    <View>
+      <Text style={styles.calendarButtonLabel}>
+        Fecha
+      </Text>
 
-<TouchableOpacity
-  style={styles.fullResourceButton}
-  onPress={() => setShowTimePicker(true)}
->
-  <Text style={styles.fullResourceIcon}>🕒</Text>
+      <Text style={styles.calendarButtonValue}>
+  {`${String(reminderDate.getDate()).padStart(2, '0')}/${String(
+    reminderDate.getMonth() + 1
+  ).padStart(2, '0')}`}
+</Text>
+    </View>
+  </TouchableOpacity>
 
-  <Text style={styles.fullResourceText}>
-    Hora: {reminderDate.toLocaleTimeString([], {
-      hour: '2-digit',
-      minute: '2-digit',
-    })}
-  </Text>
-</TouchableOpacity>
+  <TouchableOpacity
+    style={styles.calendarButton}
+    onPress={() => setShowTimePicker(true)}
+  >
+    <Text style={styles.calendarIcon}>🕒</Text>
+
+    <View>
+      <Text style={styles.calendarButtonLabel}>
+        Hora
+      </Text>
+
+      <Text style={styles.calendarButtonValue}>
+  {`${String(reminderDate.getHours()).padStart(2, '0')}.${String(
+    reminderDate.getMinutes()
+  ).padStart(2, '0')}`}
+</Text>
+    </View>
+  </TouchableOpacity>
+</View>
 
 {showDatePicker && (
   <DateTimePicker
@@ -908,8 +914,14 @@ setCalendarEventDate(
     </Text>
 
     <Text style={styles.dataPreviewText}>
-      {calendarEventDate.toLocaleString()}
-    </Text>
+  {`${String(calendarEventDate.getDate()).padStart(2, '0')}/${String(
+    calendarEventDate.getMonth() + 1
+  ).padStart(2, '0')} · ${String(
+    calendarEventDate.getHours()
+  ).padStart(2, '0')}.${String(
+    calendarEventDate.getMinutes()
+  ).padStart(2, '0')}`}
+</Text>
   </View>
 )}
 
@@ -919,21 +931,15 @@ setCalendarEventDate(
             <View style={styles.notificationIcon}>
               <Text>🔔</Text>
             </View>
+<View style={styles.notificationInfo}>
+  <Text style={styles.notificationTitle}>
+    Notificación local activada
+  </Text>
 
-            <View style={styles.notificationInfo}>
-              <Text
-                style={styles.notificationTitle}
-              >
-                Recordatorio activado
-              </Text>
-
-              <Text
-                style={styles.notificationText}
-              >
-                Recibirás una notificación de prueba
-                10 segundos después.
-              </Text>
-            </View>
+  <Text style={styles.notificationText}>
+    Se enviará una notificación en 10 segundos.
+  </Text>
+</View>
           </View>
 
           <TouchableOpacity
@@ -1038,6 +1044,88 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F7FAF8',
   },
+
+  calendarRow: {
+  flexDirection: 'row',
+  gap: 10,
+  marginBottom: 14,
+},
+
+calendarButton: {
+  flex: 1,
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: '#F0FDF4',
+  borderWidth: 1,
+  borderColor: '#BBF7D0',
+  borderRadius: 14,
+  paddingHorizontal: 12,
+  paddingVertical: 11,
+},
+
+calendarIcon: {
+  fontSize: 20,
+  marginRight: 8,
+},
+
+calendarButtonLabel: {
+  color: '#71717A',
+  fontSize: 10,
+  fontWeight: '600',
+},
+
+calendarButtonValue: {
+  color: '#166534',
+  fontSize: 12,
+  fontWeight: '800',
+  marginTop: 2,
+},
+
+resourceRow: {
+  flexDirection: 'row',
+  gap: 10,
+  marginBottom: 14,
+},
+
+compactResourceButton: {
+  flex: 1,
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: '#F0FDF4',
+  borderWidth: 1,
+  borderColor: '#BBF7D0',
+  borderRadius: 14,
+  paddingVertical: 12,
+},
+
+compactResourceIcon: {
+  fontSize: 18,
+  marginRight: 7,
+},
+
+compactResourceText: {
+  color: '#166534',
+  fontSize: 12,
+  fontWeight: '800',
+},
+
+compactPreview: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  backgroundColor: '#FAFAFA',
+  borderWidth: 1,
+  borderColor: '#E4E4E7',
+  borderRadius: 14,
+  padding: 12,
+  marginBottom: 12,
+},
+
+compactPreviewContent: {
+  flex: 1,
+  marginRight: 12,
+},
 
   content: {
     padding: 22,
@@ -1268,32 +1356,27 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  notificationBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
+ notificationBox: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: '#F0FDF4',
+  borderWidth: 1,
+  borderColor: '#BBF7D0',
+  paddingHorizontal: 11,
+  paddingVertical: 9,
+  borderRadius: 14,
+  marginBottom: 14,
+},
 
-    backgroundColor: '#F0FDF4',
-    borderWidth: 1,
-    borderColor: '#BBF7D0',
-
-    padding: 14,
-    borderRadius: 14,
-
-    marginBottom: 24,
-  },
-
-  notificationIcon: {
-    width: 39,
-    height: 39,
-    borderRadius: 12,
-
-    backgroundColor: '#DCFCE7',
-
-    alignItems: 'center',
-    justifyContent: 'center',
-
-    marginRight: 12,
-  },
+ notificationIcon: {
+  width: 30,
+  height: 30,
+  borderRadius: 10,
+  backgroundColor: '#DCFCE7',
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginRight: 10,
+},
 
   notificationInfo: {
     flex: 1,
