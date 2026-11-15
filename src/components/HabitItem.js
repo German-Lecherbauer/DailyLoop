@@ -90,7 +90,6 @@ export default function HabitItem({
           </View>
         </View>
       )}
-
       {habit.contact && (
         <View style={styles.resourceInfo}>
           <View style={styles.resourceInfoIcon}>
@@ -110,6 +109,26 @@ export default function HabitItem({
               {habit.contact.phone
                 ? habit.contact.phone
                 : 'Sin teléfono'}
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {habit.calendarEventDate && (
+        <View style={styles.resourceInfo}>
+          <View style={styles.resourceInfoIcon}>
+            <Text>📅</Text>
+          </View>
+
+          <View style={styles.resourceInfoContent}>
+            <Text style={styles.resourceInfoTitle}>
+              Recordatorio
+            </Text>
+
+            <Text style={styles.resourceInfoText}>
+              {new Date(
+                habit.calendarEventDate
+              ).toLocaleString()}
             </Text>
           </View>
         </View>

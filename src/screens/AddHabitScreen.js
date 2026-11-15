@@ -17,8 +17,10 @@ import * as Notifications from 'expo-notifications';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
 import * as Contacts from 'expo-contacts';
+import * as Calendar from 'expo-calendar';
 
 import { useHabitStore } from '../stores/habitStore';
+import DateTimePicker from '@expo/ui/community/datetime-picker';
 
 export default function AddHabitScreen({ navigation }) {
   const [name, setName] = useState('');
@@ -39,6 +41,28 @@ export default function AddHabitScreen({ navigation }) {
 
   const [loadingContacts, setLoadingContacts] =
     useState(false);
+
+  const [calendarEventId, setCalendarEventId] =
+  useState(null);
+
+const [calendarEventDate, setCalendarEventDate] =
+  useState(null);
+
+const [loadingCalendar, setLoadingCalendar] =
+  useState(false);
+
+
+const [reminderDate, setReminderDate] = useState(() => {
+  const date = new Date();
+  date.setDate(date.getDate() + 1);
+  return date;
+});
+
+const [showDatePicker, setShowDatePicker] =
+  useState(false);
+
+const [showTimePicker, setShowTimePicker] =
+  useState(false);
 
   const addHabit = useHabitStore(
     (state) => state.addHabit
@@ -337,6 +361,111 @@ export default function AddHabitScreen({ navigation }) {
     setSelectedContact(null);
   };
 
+  const createCalendarReminder = async () => {
+  if (name.trim() === '') {
+    Alert.alert(
+      'Nombre requerido',
+      'Primero ingresá el nombre del hábito.'
+    );
+
+    return;
+  }
+
+  try {
+    setLoadingCalendar(true);
+
+    const currentPermission =
+      await Calendar.getCalendarPermissions();
+
+    let permission = currentPermission;
+
+    if (!currentPermission.granted) {
+      permission =
+        await Calendar.requestCalendarPermissions();
+    }
+
+    if (!permission.granted) {
+      Alert.alert(
+        'Permiso de calendario',
+        'Necesitamos acceso al calendario para crear el recordatorio.'
+      );
+
+      return;
+    }
+
+    const calendars =
+      await Calendar.getCalendars(
+        Calendar.EntityTypes.EVENT
+      );
+let writableCalendar = calendars.find(
+  (calendar) =>
+    calendar.allowsModifications &&
+    calendar.isPrimary
+) ?? calendars.find(
+  (calendar) => calendar.allowsModifications
+);
+
+if (!writableCalendar) {
+  writableCalendar =
+    await Calendar.createCalendar({
+      title: 'DailyLoop',
+      color: '#16A34A',
+      entityType: Calendar.EntityTypes.EVENT,
+      source: {
+        isLocalAccount: true,
+        name: 'DailyLoop',
+      },
+      name: 'DailyLoop',
+      ownerAccount: 'personal',
+      accessLevel:
+        Calendar.CalendarAccessLevel.OWNER,
+    });
+}
+
+    const startDate = new Date(reminderDate);
+
+    const endDate = new Date(
+  startDate.getTime() + 30 * 60 * 1000
+); 
+    const event =
+  await writableCalendar.createEvent({
+    title: `DailyLoop - ${name.trim()}`,
+    notes: `Recordatorio del hábito ${name.trim()}`,
+    startDate,
+    endDate,
+    allDay: false,
+  });
+
+const verifiedEvent =
+  await Calendar.ExpoCalendarEvent.get(event.id);
+
+console.log(
+  'Evento verificado:',
+  verifiedEvent.title,
+  verifiedEvent.startDate
+);
+
+setCalendarEventId(verifiedEvent.id);
+setCalendarEventDate(
+  new Date(verifiedEvent.startDate)
+);
+
+    Alert.alert(
+      'Recordatorio creado',
+      'El evento fue agregado al calendario en la fecha y hora seleccionadas.'
+    );
+  } catch (error) {
+    console.log('Error calendario:', error);
+
+    Alert.alert(
+      'Error',
+      'No se pudo crear el recordatorio en el calendario.'
+    );
+  } finally {
+    setLoadingCalendar(false);
+  }
+};
+
   // =========================
   // GUARDAR HÁBITO
   // =========================
@@ -362,7 +491,11 @@ export default function AddHabitScreen({ navigation }) {
       location,
       contact: selectedContact,
 
-      calendarEventId: null,
+      calendarEventId,
+      calendarEventDate:
+      calendarEventDate
+      ? calendarEventDate.toISOString()
+      : null,
     };
 
     try {
@@ -661,6 +794,125 @@ export default function AddHabitScreen({ navigation }) {
             </View>
           )}
 
+            {/* CALENDARIO */}
+
+<Text style={styles.label}>
+  Recordatorio en calendario
+</Text>
+
+<Text style={styles.description}>
+  Elegí cuándo querés recibir el recordatorio.
+</Text>
+
+<TouchableOpacity
+  style={styles.fullResourceButton}
+  onPress={() => setShowDatePicker(true)}
+>
+  <Text style={styles.fullResourceIcon}>📆</Text>
+
+  <Text style={styles.fullResourceText}>
+    Fecha: {reminderDate.toLocaleDateString()}
+  </Text>
+</TouchableOpacity>
+
+<TouchableOpacity
+  style={styles.fullResourceButton}
+  onPress={() => setShowTimePicker(true)}
+>
+  <Text style={styles.fullResourceIcon}>🕒</Text>
+
+  <Text style={styles.fullResourceText}>
+    Hora: {reminderDate.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    })}
+  </Text>
+</TouchableOpacity>
+
+{showDatePicker && (
+  <DateTimePicker
+    value={reminderDate}
+    mode="date"
+    presentation="dialog"
+    onChange={(event, selectedDate) => {
+      setShowDatePicker(false);
+
+      if (selectedDate) {
+        const updatedDate = new Date(reminderDate);
+
+        updatedDate.setFullYear(
+          selectedDate.getFullYear(),
+          selectedDate.getMonth(),
+          selectedDate.getDate()
+        );
+
+        setReminderDate(updatedDate);
+      }
+    }}
+  />
+)}
+
+{showTimePicker && (
+  <DateTimePicker
+    value={reminderDate}
+    mode="time"
+    presentation="dialog"
+    onChange={(event, selectedDate) => {
+      setShowTimePicker(false);
+
+      if (selectedDate) {
+        const updatedDate = new Date(reminderDate);
+
+        updatedDate.setHours(
+          selectedDate.getHours(),
+          selectedDate.getMinutes(),
+          0,
+          0
+        );
+
+        setReminderDate(updatedDate);
+      }
+    }}
+  />
+)}
+
+<TouchableOpacity
+  style={styles.fullResourceButton}
+  onPress={createCalendarReminder}
+  disabled={loadingCalendar || !!calendarEventId}
+>
+  {loadingCalendar ? (
+    <ActivityIndicator
+      size="small"
+      color="#166534"
+    />
+  ) : (
+    <>
+      <Text style={styles.fullResourceIcon}>
+        📅
+      </Text>
+
+      <Text style={styles.fullResourceText}>
+        {calendarEventId
+          ? 'Recordatorio creado ✓'
+          : 'Crear recordatorio'}
+      </Text>
+    </>
+  )}
+</TouchableOpacity>
+
+{calendarEventDate && (
+  <View style={styles.dataPreview}>
+    <Text style={styles.dataPreviewTitle}>
+      Evento asociado
+    </Text>
+
+    <Text style={styles.dataPreviewText}>
+      {calendarEventDate.toLocaleString()}
+    </Text>
+  </View>
+)}
+
           {/* NOTIFICACIÓN */}
 
           <View style={styles.notificationBox}>
@@ -692,6 +944,7 @@ export default function AddHabitScreen({ navigation }) {
               Crear hábito
             </Text>
           </TouchableOpacity>
+          
         </View>
 
         <Text style={styles.tip}>
