@@ -1,4 +1,5 @@
 import React from 'react';
+
 import {
   View,
   Text,
@@ -16,7 +17,8 @@ export default function HabitItem({
     <View
       style={[
         styles.card,
-        habit.completed && styles.completedCard,
+        habit.completed &&
+          styles.completedCard,
       ]}
     >
       {habit.imageUri && (
@@ -71,19 +73,43 @@ export default function HabitItem({
       </View>
 
       {habit.location && (
-        <View style={styles.locationContainer}>
-          <View style={styles.locationIcon}>
+        <View style={styles.resourceInfo}>
+          <View style={styles.resourceInfoIcon}>
             <Text>📍</Text>
           </View>
 
-          <View style={styles.locationInfo}>
-            <Text style={styles.locationTitle}>
+          <View style={styles.resourceInfoContent}>
+            <Text style={styles.resourceInfoTitle}>
               Ubicación asociada
             </Text>
 
-            <Text style={styles.locationText}>
+            <Text style={styles.resourceInfoText}>
               {habit.location.latitude.toFixed(5)},{' '}
               {habit.location.longitude.toFixed(5)}
+            </Text>
+          </View>
+        </View>
+      )}
+
+      {habit.contact && (
+        <View style={styles.resourceInfo}>
+          <View style={styles.resourceInfoIcon}>
+            <Text>👤</Text>
+          </View>
+
+          <View style={styles.resourceInfoContent}>
+            <Text style={styles.resourceInfoTitle}>
+              Compañero / entrenador
+            </Text>
+
+            <Text style={styles.contactName}>
+              {habit.contact.name}
+            </Text>
+
+            <Text style={styles.resourceInfoText}>
+              {habit.contact.phone
+                ? habit.contact.phone
+                : 'Sin teléfono'}
             </Text>
           </View>
         </View>
@@ -96,7 +122,9 @@ export default function HabitItem({
             habit.completed &&
               styles.undoButton,
           ]}
-          onPress={() => onToggle(habit.id)}
+          onPress={() =>
+            onToggle(habit.id)
+          }
           activeOpacity={0.8}
         >
           <Text
@@ -114,7 +142,9 @@ export default function HabitItem({
 
         <TouchableOpacity
           style={styles.deleteButton}
-          onPress={() => onDelete(habit.id)}
+          onPress={() =>
+            onDelete(habit.id)
+          }
           activeOpacity={0.7}
         >
           <Text style={styles.deleteText}>
@@ -229,7 +259,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  locationContainer: {
+  resourceInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F0FDF4',
@@ -237,10 +267,10 @@ const styles = StyleSheet.create({
     borderColor: '#BBF7D0',
     borderRadius: 14,
     padding: 12,
-    marginTop: 16,
+    marginTop: 14,
   },
 
-  locationIcon: {
+  resourceInfoIcon: {
     width: 36,
     height: 36,
     borderRadius: 11,
@@ -250,20 +280,27 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
 
-  locationInfo: {
+  resourceInfoContent: {
     flex: 1,
   },
 
-  locationTitle: {
+  resourceInfoTitle: {
     color: '#166534',
     fontSize: 12,
     fontWeight: '800',
     marginBottom: 2,
   },
 
-  locationText: {
+  resourceInfoText: {
     color: '#64748B',
     fontSize: 11,
+  },
+
+  contactName: {
+    color: '#18181B',
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 2,
   },
 
   actions: {

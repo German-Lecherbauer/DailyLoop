@@ -8,20 +8,36 @@ import {
   Alert,
   Image,
   ScrollView,
+  Modal,
+  FlatList,
+  ActivityIndicator,
 } from 'react-native';
 
 import * as Notifications from 'expo-notifications';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
+import * as Contacts from 'expo-contacts';
 
 import { useHabitStore } from '../stores/habitStore';
 
 export default function AddHabitScreen({ navigation }) {
   const [name, setName] = useState('');
   const [frequency, setFrequency] = useState('Diario');
+
   const [imageUri, setImageUri] = useState(null);
+
   const [location, setLocation] = useState(null);
   const [loadingLocation, setLoadingLocation] =
+    useState(false);
+
+  const [selectedContact, setSelectedContact] =
+    useState(null);
+
+  const [contacts, setContacts] = useState([]);
+  const [contactModalVisible, setContactModalVisible] =
+    useState(false);
+
+  const [loadingContacts, setLoadingContacts] =
     useState(false);
 
   const addHabit = useHabitStore(
@@ -54,6 +70,10 @@ export default function AddHabitScreen({ navigation }) {
     });
   };
 
+  // =========================
+  // CÁMARA
+  // =========================
+
   const ensureCameraPermission = async () => {
     const currentPermission =
       await ImagePicker.getCameraPermissionsAsync();
@@ -81,6 +101,10 @@ export default function AddHabitScreen({ navigation }) {
 
     return false;
   };
+
+  // =========================
+  // GALERÍA
+  // =========================
 
   const ensureGalleryPermission = async () => {
     const currentPermission =
@@ -170,6 +194,10 @@ export default function AddHabitScreen({ navigation }) {
     setImageUri(null);
   };
 
+  // =========================
+  // UBICACIÓN
+  // =========================
+
   const getCurrentLocation = async () => {
     try {
       setLoadingLocation(true);
@@ -223,6 +251,96 @@ export default function AddHabitScreen({ navigation }) {
     setLocation(null);
   };
 
+  // =========================
+  // CONTACTOS
+  // =========================
+
+  const openContacts = async () => {
+    try {
+      setLoadingContacts(true);
+
+      const currentPermission =
+        await Contacts.getPermissionsAsync();
+
+      let permission = currentPermission;
+
+      if (!currentPermission.granted) {
+        permission =
+          await Contacts.requestPermissionsAsync();
+      }
+
+      if (!permission.granted) {
+        Alert.alert(
+          'Permiso de contactos',
+          'Necesitamos acceso a tus contactos para asociar un compañero o entrenador al hábito.'
+        );
+
+        return;
+      }
+
+      const contactList =
+        await Contacts.Contact.getAllDetails(
+          [
+            Contacts.ContactField.FULL_NAME,
+            Contacts.ContactField.PHONES,
+          ],
+          {
+            sortOrder:
+              Contacts.ContactsSortOrder.GivenName,
+          }
+        );
+
+      if (contactList.length === 0) {
+        Alert.alert(
+          'Sin contactos',
+          'No encontramos contactos disponibles en el dispositivo.'
+        );
+
+        return;
+      }
+
+      setContacts(contactList);
+      setContactModalVisible(true);
+    } catch (error) {
+      console.log('Error contactos:', error);
+
+      Alert.alert(
+        'Error',
+        'No se pudieron cargar los contactos'
+      );
+    } finally {
+      setLoadingContacts(false);
+    }
+  };
+
+  const selectContact = (contact) => {
+    const selected = {
+      id: contact.id,
+      name:
+        contact.fullName &&
+        contact.fullName.trim() !== ''
+          ? contact.fullName
+          : 'Contacto sin nombre',
+
+      phone:
+        contact.phones &&
+        contact.phones.length > 0
+          ? contact.phones[0].number
+          : null,
+    };
+
+    setSelectedContact(selected);
+    setContactModalVisible(false);
+  };
+
+  const removeContact = () => {
+    setSelectedContact(null);
+  };
+
+  // =========================
+  // GUARDAR HÁBITO
+  // =========================
+
   const saveHabit = async () => {
     if (name.trim() === '') {
       Alert.alert(
@@ -242,8 +360,8 @@ export default function AddHabitScreen({ navigation }) {
 
       imageUri,
       location,
+      contact: selectedContact,
 
-      contact: null,
       calendarEventId: null,
     };
 
@@ -274,251 +392,391 @@ export default function AddHabitScreen({ navigation }) {
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.header}>
-        <View style={styles.iconContainer}>
-          <Text style={styles.icon}>＋</Text>
+    <>
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <View style={styles.iconContainer}>
+            <Text style={styles.icon}>＋</Text>
+          </View>
+
+          <Text style={styles.title}>
+            Nuevo hábito
+          </Text>
+
+          <Text style={styles.subtitle}>
+            Sumá una rutina y empezá una nueva racha.
+          </Text>
         </View>
 
-        <Text style={styles.title}>
-          Nuevo hábito
-        </Text>
+        <View style={styles.card}>
+          <Text style={styles.label}>
+            Nombre del hábito
+          </Text>
 
-        <Text style={styles.subtitle}>
-          Sumá una rutina y empezá una nueva racha.
-        </Text>
-      </View>
+          <TextInput
+            style={styles.input}
+            placeholder="Ej: Leer 20 minutos"
+            placeholderTextColor="#A1A1AA"
+            value={name}
+            onChangeText={setName}
+          />
 
-      <View style={styles.card}>
-        <Text style={styles.label}>
-          Nombre del hábito
-        </Text>
+          <Text style={styles.label}>
+            Frecuencia
+          </Text>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Ej: Leer 20 minutos"
-          placeholderTextColor="#A1A1AA"
-          value={name}
-          onChangeText={setName}
-        />
-
-        <Text style={styles.label}>
-          Frecuencia
-        </Text>
-
-        <View style={styles.frequencyContainer}>
-          <TouchableOpacity
-            style={[
-              styles.frequencyButton,
-              frequency === 'Diario' &&
-                styles.frequencyButtonSelected,
-            ]}
-            onPress={() =>
-              setFrequency('Diario')
-            }
-            activeOpacity={0.8}
-          >
-            <Text
+          <View style={styles.frequencyContainer}>
+            <TouchableOpacity
               style={[
-                styles.frequencyText,
+                styles.frequencyButton,
                 frequency === 'Diario' &&
-                  styles.frequencyTextSelected,
+                  styles.frequencyButtonSelected,
               ]}
+              onPress={() =>
+                setFrequency('Diario')
+              }
             >
-              Diario
-            </Text>
+              <Text
+                style={[
+                  styles.frequencyText,
+                  frequency === 'Diario' &&
+                    styles.frequencyTextSelected,
+                ]}
+              >
+                Diario
+              </Text>
 
-            <Text
-              style={[
-                styles.frequencyDescription,
-                frequency === 'Diario' &&
-                  styles.frequencyDescriptionSelected,
-              ]}
-            >
-              Cada día
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.frequencyButton,
-              frequency === 'Semanal' &&
-                styles.frequencyButtonSelected,
-            ]}
-            onPress={() =>
-              setFrequency('Semanal')
-            }
-            activeOpacity={0.8}
-          >
-            <Text
-              style={[
-                styles.frequencyText,
-                frequency === 'Semanal' &&
-                  styles.frequencyTextSelected,
-              ]}
-            >
-              Semanal
-            </Text>
-
-            <Text
-              style={[
-                styles.frequencyDescription,
-                frequency === 'Semanal' &&
-                  styles.frequencyDescriptionSelected,
-              ]}
-            >
-              Cada semana
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <Text style={styles.label}>
-          Evidencia del hábito
-        </Text>
-
-        <Text style={styles.imageDescription}>
-          Podés sacar una foto o elegir una imagen
-          desde tu galería.
-        </Text>
-
-        <View style={styles.imageActions}>
-          <TouchableOpacity
-            style={styles.resourceButton}
-            onPress={takePhoto}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.resourceIcon}>
-              📷
-            </Text>
-
-            <Text style={styles.resourceButtonText}>
-              Cámara
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.resourceButton}
-            onPress={pickImage}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.resourceIcon}>
-              🖼️
-            </Text>
-
-            <Text style={styles.resourceButtonText}>
-              Galería
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {imageUri && (
-          <View style={styles.previewContainer}>
-            <Image
-              source={{ uri: imageUri }}
-              style={styles.previewImage}
-            />
+              <Text
+                style={[
+                  styles.frequencyDescription,
+                  frequency === 'Diario' &&
+                    styles.frequencyDescriptionSelected,
+                ]}
+              >
+                Cada día
+              </Text>
+            </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.removeImageButton}
-              onPress={removeImage}
+              style={[
+                styles.frequencyButton,
+                frequency === 'Semanal' &&
+                  styles.frequencyButtonSelected,
+              ]}
+              onPress={() =>
+                setFrequency('Semanal')
+              }
             >
-              <Text style={styles.removeImageText}>
-                Quitar imagen
+              <Text
+                style={[
+                  styles.frequencyText,
+                  frequency === 'Semanal' &&
+                    styles.frequencyTextSelected,
+                ]}
+              >
+                Semanal
+              </Text>
+
+              <Text
+                style={[
+                  styles.frequencyDescription,
+                  frequency === 'Semanal' &&
+                    styles.frequencyDescriptionSelected,
+                ]}
+              >
+                Cada semana
               </Text>
             </TouchableOpacity>
           </View>
-        )}
 
-        <Text style={styles.label}>
-          Ubicación del hábito
-        </Text>
+          {/* FOTO */}
 
-        <Text style={styles.imageDescription}>
-          Podés asociar tu ubicación actual al hábito.
-        </Text>
-
-        <TouchableOpacity
-          style={styles.locationButton}
-          onPress={getCurrentLocation}
-          activeOpacity={0.8}
-          disabled={loadingLocation}
-        >
-          <Text style={styles.locationButtonIcon}>
-            📍
+          <Text style={styles.label}>
+            Evidencia del hábito
           </Text>
 
-          <Text style={styles.locationButtonText}>
-            {loadingLocation
-              ? 'Obteniendo ubicación...'
-              : 'Usar ubicación actual'}
+          <Text style={styles.description}>
+            Podés sacar una foto o elegir una imagen
+            desde tu galería.
           </Text>
-        </TouchableOpacity>
 
-        {location && (
-          <View style={styles.locationPreview}>
-            <Text style={styles.locationPreviewTitle}>
-              Ubicación asociada
-            </Text>
+          <View style={styles.imageActions}>
+            <TouchableOpacity
+              style={styles.resourceButton}
+              onPress={takePhoto}
+            >
+              <Text style={styles.resourceIcon}>
+                📷
+              </Text>
 
-            <Text style={styles.locationPreviewText}>
-              Lat: {location.latitude.toFixed(5)}
-            </Text>
-
-            <Text style={styles.locationPreviewText}>
-              Long: {location.longitude.toFixed(5)}
-            </Text>
+              <Text style={styles.resourceButtonText}>
+                Cámara
+              </Text>
+            </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={removeLocation}
-              style={styles.removeLocationButton}
+              style={styles.resourceButton}
+              onPress={pickImage}
             >
-              <Text style={styles.removeLocationText}>
-                Quitar ubicación
+              <Text style={styles.resourceIcon}>
+                🖼️
+              </Text>
+
+              <Text style={styles.resourceButtonText}>
+                Galería
               </Text>
             </TouchableOpacity>
           </View>
-        )}
 
-        <View style={styles.notificationBox}>
-          <View style={styles.notificationIcon}>
-            <Text>🔔</Text>
-          </View>
+          {imageUri && (
+            <View style={styles.previewContainer}>
+              <Image
+                source={{ uri: imageUri }}
+                style={styles.previewImage}
+              />
 
-          <View style={styles.notificationInfo}>
-            <Text
-              style={styles.notificationTitle}
-            >
-              Recordatorio activado
+              <TouchableOpacity
+                onPress={removeImage}
+                style={styles.removeButton}
+              >
+                <Text style={styles.removeText}>
+                  Quitar imagen
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* UBICACIÓN */}
+
+          <Text style={styles.label}>
+            Ubicación del hábito
+          </Text>
+
+          <Text style={styles.description}>
+            Podés asociar tu ubicación actual al hábito.
+          </Text>
+
+          <TouchableOpacity
+            style={styles.fullResourceButton}
+            onPress={getCurrentLocation}
+            disabled={loadingLocation}
+          >
+            <Text style={styles.fullResourceIcon}>
+              📍
             </Text>
 
-            <Text
-              style={styles.notificationText}
-            >
-              Recibirás una notificación de prueba
-              10 segundos después.
+            <Text style={styles.fullResourceText}>
+              {loadingLocation
+                ? 'Obteniendo ubicación...'
+                : 'Usar ubicación actual'}
             </Text>
+          </TouchableOpacity>
+
+          {location && (
+            <View style={styles.dataPreview}>
+              <Text style={styles.dataPreviewTitle}>
+                Ubicación asociada
+              </Text>
+
+              <Text style={styles.dataPreviewText}>
+                Lat: {location.latitude.toFixed(5)}
+              </Text>
+
+              <Text style={styles.dataPreviewText}>
+                Long: {location.longitude.toFixed(5)}
+              </Text>
+
+              <TouchableOpacity
+                onPress={removeLocation}
+                style={styles.removeButton}
+              >
+                <Text style={styles.removeText}>
+                  Quitar ubicación
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* CONTACTO */}
+
+          <Text style={styles.label}>
+            Compañero o entrenador
+          </Text>
+
+          <Text style={styles.description}>
+            Asociá un contacto de tu agenda al hábito.
+          </Text>
+
+          <TouchableOpacity
+            style={styles.fullResourceButton}
+            onPress={openContacts}
+            disabled={loadingContacts}
+          >
+            {loadingContacts ? (
+              <ActivityIndicator
+                size="small"
+                color="#166534"
+              />
+            ) : (
+              <>
+                <Text style={styles.fullResourceIcon}>
+                  👤
+                </Text>
+
+                <Text style={styles.fullResourceText}>
+                  Seleccionar contacto
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+          {selectedContact && (
+            <View style={styles.dataPreview}>
+              <Text style={styles.dataPreviewTitle}>
+                Contacto asociado
+              </Text>
+
+              <Text style={styles.contactName}>
+                {selectedContact.name}
+              </Text>
+
+              <Text style={styles.dataPreviewText}>
+                {selectedContact.phone
+                  ? selectedContact.phone
+                  : 'Sin número de teléfono'}
+              </Text>
+
+              <TouchableOpacity
+                onPress={removeContact}
+                style={styles.removeButton}
+              >
+                <Text style={styles.removeText}>
+                  Quitar contacto
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {/* NOTIFICACIÓN */}
+
+          <View style={styles.notificationBox}>
+            <View style={styles.notificationIcon}>
+              <Text>🔔</Text>
+            </View>
+
+            <View style={styles.notificationInfo}>
+              <Text
+                style={styles.notificationTitle}
+              >
+                Recordatorio activado
+              </Text>
+
+              <Text
+                style={styles.notificationText}
+              >
+                Recibirás una notificación de prueba
+                10 segundos después.
+              </Text>
+            </View>
           </View>
+
+          <TouchableOpacity
+            style={styles.saveButton}
+            onPress={saveHabit}
+          >
+            <Text style={styles.saveButtonText}>
+              Crear hábito
+            </Text>
+          </TouchableOpacity>
         </View>
 
-        <TouchableOpacity
-          style={styles.saveButton}
-          onPress={saveHabit}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.saveButtonText}>
-            Crear hábito
-          </Text>
-        </TouchableOpacity>
-      </View>
+        <Text style={styles.tip}>
+          💡 La constancia vale más que la
+          perfección.
+        </Text>
+      </ScrollView>
 
-      <Text style={styles.tip}>
-        💡 La constancia vale más que la perfección.
-      </Text>
-    </ScrollView>
+      {/* MODAL CONTACTOS */}
+
+      <Modal
+        visible={contactModalVisible}
+        animationType="slide"
+        onRequestClose={() =>
+          setContactModalVisible(false)
+        }
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <View>
+              <Text style={styles.modalTitle}>
+                Seleccionar contacto
+              </Text>
+
+              <Text style={styles.modalSubtitle}>
+                Elegí un compañero o entrenador
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              style={styles.modalClose}
+              onPress={() =>
+                setContactModalVisible(false)
+              }
+            >
+              <Text style={styles.modalCloseText}>
+                Cerrar
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <FlatList
+            data={contacts}
+            keyExtractor={(item) => item.id}
+            showsVerticalScrollIndicator={false}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.contactItem}
+                onPress={() =>
+                  selectContact(item)
+                }
+              >
+                <View style={styles.contactAvatar}>
+                  <Text style={styles.contactAvatarText}>
+                    👤
+                  </Text>
+                </View>
+
+                <View style={styles.contactInfo}>
+                  <Text style={styles.contactItemName}>
+                    {item.fullName &&
+                    item.fullName.trim() !== ''
+                      ? item.fullName
+                      : 'Contacto sin nombre'}
+                  </Text>
+
+                  <Text
+                    style={styles.contactItemPhone}
+                  >
+                    {item.phones &&
+                    item.phones.length > 0
+                      ? item.phones[0].number
+                      : 'Sin teléfono'}
+                  </Text>
+                </View>
+
+                <Text style={styles.contactArrow}>
+                  ›
+                </Text>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -644,7 +902,7 @@ const styles = StyleSheet.create({
     color: '#DCFCE7',
   },
 
-  imageDescription: {
+  description: {
     color: '#71717A',
     fontSize: 12,
     lineHeight: 18,
@@ -689,67 +947,69 @@ const styles = StyleSheet.create({
     backgroundColor: '#F4F4F5',
   },
 
-  removeImageButton: {
-    alignSelf: 'center',
-    marginTop: 10,
-  },
-
-  removeImageText: {
-    color: '#DC2626',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-
-  locationButton: {
+  fullResourceButton: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+
     backgroundColor: '#F0FDF4',
     borderWidth: 1,
     borderColor: '#BBF7D0',
+
     borderRadius: 14,
     paddingVertical: 14,
+
     marginBottom: 16,
   },
 
-  locationButtonIcon: {
+  fullResourceIcon: {
     fontSize: 19,
     marginRight: 8,
   },
 
-  locationButtonText: {
+  fullResourceText: {
     color: '#166534',
     fontSize: 13,
     fontWeight: '800',
   },
 
-  locationPreview: {
+  dataPreview: {
     backgroundColor: '#FAFAFA',
     borderWidth: 1,
     borderColor: '#E4E4E7',
+
     borderRadius: 14,
     padding: 14,
+
     marginBottom: 24,
   },
 
-  locationPreviewTitle: {
+  dataPreviewTitle: {
     color: '#166534',
     fontSize: 13,
     fontWeight: '800',
     marginBottom: 5,
   },
 
-  locationPreviewText: {
+  dataPreviewText: {
     color: '#71717A',
     fontSize: 12,
     marginBottom: 2,
   },
 
-  removeLocationButton: {
-    marginTop: 8,
+  contactName: {
+    color: '#18181B',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 3,
   },
 
-  removeLocationText: {
+  removeButton: {
+    marginTop: 9,
+    alignSelf: 'flex-start',
+  },
+
+  removeText: {
     color: '#DC2626',
     fontSize: 12,
     fontWeight: '700',
@@ -758,11 +1018,14 @@ const styles = StyleSheet.create({
   notificationBox: {
     flexDirection: 'row',
     alignItems: 'center',
+
     backgroundColor: '#F0FDF4',
     borderWidth: 1,
     borderColor: '#BBF7D0',
+
     padding: 14,
     borderRadius: 14,
+
     marginBottom: 24,
   },
 
@@ -770,9 +1033,12 @@ const styles = StyleSheet.create({
     width: 39,
     height: 39,
     borderRadius: 12,
+
     backgroundColor: '#DCFCE7',
+
     alignItems: 'center',
     justifyContent: 'center',
+
     marginRight: 12,
   },
 
@@ -795,8 +1061,10 @@ const styles = StyleSheet.create({
 
   saveButton: {
     backgroundColor: '#16A34A',
+
     paddingVertical: 16,
     borderRadius: 14,
+
     alignItems: 'center',
 
     shadowColor: '#16A34A',
@@ -819,7 +1087,104 @@ const styles = StyleSheet.create({
   tip: {
     color: '#71717A',
     fontSize: 12,
+
     textAlign: 'center',
     marginTop: 24,
+  },
+
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#F7FAF8',
+    paddingHorizontal: 20,
+    paddingTop: 60,
+  },
+
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+
+    marginBottom: 24,
+  },
+
+  modalTitle: {
+    color: '#18181B',
+    fontSize: 25,
+    fontWeight: '800',
+  },
+
+  modalSubtitle: {
+    color: '#71717A',
+    fontSize: 13,
+    marginTop: 4,
+  },
+
+  modalClose: {
+    backgroundColor: '#DCFCE7',
+    paddingHorizontal: 13,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+
+  modalCloseText: {
+    color: '#166534',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+
+  contactItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+
+    backgroundColor: '#FFFFFF',
+
+    borderWidth: 1,
+    borderColor: '#E7ECE8',
+
+    borderRadius: 15,
+
+    padding: 13,
+
+    marginBottom: 10,
+  },
+
+  contactAvatar: {
+    width: 42,
+    height: 42,
+
+    borderRadius: 13,
+
+    backgroundColor: '#DCFCE7',
+
+    justifyContent: 'center',
+    alignItems: 'center',
+
+    marginRight: 12,
+  },
+
+  contactAvatarText: {
+    fontSize: 18,
+  },
+
+  contactInfo: {
+    flex: 1,
+  },
+
+  contactItemName: {
+    color: '#18181B',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+
+  contactItemPhone: {
+    color: '#71717A',
+    fontSize: 12,
+    marginTop: 3,
+  },
+
+  contactArrow: {
+    color: '#16A34A',
+    fontSize: 27,
+    marginLeft: 8,
   },
 });
