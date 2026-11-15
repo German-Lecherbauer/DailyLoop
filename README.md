@@ -329,12 +329,6 @@ manejar el caso rechazado y guardar latitud y longitud
 dentro del hábito.
 ```
 
-```text
-Necesito integrar expo-calendar en Expo SDK 58.
-El usuario debe poder elegir fecha y hora,
-crear un evento y asociarlo al hábito.
-```
-
 Las respuestas generadas fueron utilizadas como referencia y luego adaptadas a:
 
 - La estructura existente del proyecto.
