@@ -245,11 +245,15 @@ const [showTimePicker, setShowTimePicker] =
         return;
       }
 
-      const currentLocation =
-        await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
+      let currentLocation =
+  await Location.getLastKnownPositionAsync();
 
+if (!currentLocation) {
+  currentLocation =
+    await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.Balanced,
+    });
+}
       setLocation({
         latitude:
           currentLocation.coords.latitude,

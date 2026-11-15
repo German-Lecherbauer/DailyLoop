@@ -359,7 +359,7 @@ https://youtube.com/shorts/ig-p5Cps1kk?si=KvI-ldZf3nhfqFVw
 
 Video demostrativo de las nuevas funcionalidades:
 
-**YouTube:** pendiente de publicación.
+https://www.youtube.com/shorts/zyF9FTvm8jA
 
 ---
 

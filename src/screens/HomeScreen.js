@@ -212,23 +212,24 @@ export default function HomeScreen({ navigation }) {
             </TouchableOpacity>
           </View>
         }
+        ListFooterComponent={
+          habits.length > 0 ? (
+            <TouchableOpacity
+              style={styles.newHabitButton}
+              onPress={() =>
+                navigation.navigate('AddHabit')
+              }
+              activeOpacity={0.85}
+            >
+              <Text style={styles.plus}>+</Text>
+
+              <Text style={styles.newHabitButtonText}>
+                Nuevo hábito
+              </Text>
+            </TouchableOpacity>
+          ) : null
+        }
       />
-
-      {habits.length > 0 && (
-        <TouchableOpacity
-          style={styles.newHabitButton}
-          onPress={() =>
-            navigation.navigate('AddHabit')
-          }
-          activeOpacity={0.85}
-        >
-          <Text style={styles.plus}>+</Text>
-
-          <Text style={styles.newHabitButtonText}>
-            Nuevo hábito
-          </Text>
-        </TouchableOpacity>
-      )}
     </SafeAreaView>
   );
 }
@@ -242,7 +243,7 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: 20,
     paddingTop: 8,
-    paddingBottom: 110,
+    paddingBottom: 20,
   },
 
   header: {
@@ -436,19 +437,16 @@ const styles = StyleSheet.create({
   },
 
   newHabitButton: {
-    position: 'absolute',
-    left: 20,
-    right: 20,
-    bottom: 55,
-
     backgroundColor: '#16A34A',
-
     paddingVertical: 16,
     borderRadius: 16,
 
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+
+    marginTop: 8,
+    marginBottom: 24,
 
     shadowColor: '#16A34A',
     shadowOffset: {
